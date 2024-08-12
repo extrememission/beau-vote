@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Panel</title>
+    <style>
+        .voting-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .vote-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .vote-button {
+            font-size: 48px; /* Adjust this value to change the size */
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .vote-count {
+            font-size: 20px;
+        }
+
+        .thumbs-up-container {
+            flex-direction: row;
+        }
+
+        .thumbs-down-container {
+            flex-direction: row-reverse;
+        }
+    </style>
+</head>
+<body>
+    <div class="voting-panel">
+        <div class="vote-container thumbs-up-container">
+            <div class="vote-count" id="thumbs-up-count">0</div>
+            <button class="vote-button" id="thumbs-up">👍</button>
+        </div>
+        <div class="vote-container thumbs-down-container">
+            <button class="vote-button" id="thumbs-down">👎</button>
+            <div class="vote-count" id="thumbs-down-count">0</div>
+        </div>
+    </div>
+    <script>
+        async function updateVotes(type) {
+            const response = await fetch('/.netlify/functions/vote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type })
+            });
+
+            const data = await response.json();
+            document.getElementById('thumbs-up-count').textContent = data.thumbsUp;
+            document.getElementById('thumbs-down-count').textContent = data.thumbsDown;
+        }
+
+        document.getElementById('thumbs-up').addEventListener('click', () => updateVotes('thumbsUp'));
+        document.getElementById('thumbs-down').addEventListener('click', () => updateVotes('thumbsDown'));
+    </script>
+</body>
+</html>
