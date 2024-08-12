@@ -1,36 +1,36 @@
-const { BlobStore } = require('@netlify/blob-store');
+import { getStore } from "@netlify/blobs";
 
-const blobStore = new BlobStore('your-blob-store-id'); // Replace with your blob store ID
+// Initialize Blob Store
+const voteStore = getStore({ fetch, name: "vote-store" });
 
-exports.handler = async (event) => {
-    if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: 'Method Not Allowed' };
+export default async (req) => {
+    if (req.method === "POST") {
+        const formData = new URLSearchParams(await req.text());
+        const voteType = formData.get('vote');
+        const blobKey = "votes.json";  // Key for storing votes data
+
+        let voteCounts = { thumbsUp: 0, thumbsDown: 0 };
+
+        // Retrieve existing votes
+        try {
+            const blob = await voteStore.get(blobKey);
+            voteCounts = JSON.parse(blob);
+        } catch (error) {
+            // Initialize vote counts if blob doesn't exist
+        }
+
+        // Update votes based on the type
+        if (voteType === 'thumbsUp') {
+            voteCounts.thumbsUp++;
+        } else if (voteType === 'thumbsDown') {
+            voteCounts.thumbsDown++;
+        }
+
+        // Save updated votes
+        await voteStore.put(blobKey, JSON.stringify(voteCounts));
+
+        return new Response(JSON.stringify({ message: 'Vote received', voteCounts }), { status: 200 });
     }
 
-    const formData = new URLSearchParams(event.body);
-    const voteType = formData.get('vote');
-
-    // Retrieve current vote counts
-    let voteCounts = { thumbsUp: 0, thumbsDown: 0 };
-    try {
-        const blob = await blobStore.get('votes.json');
-        voteCounts = JSON.parse(blob.data);
-    } catch (error) {
-        // Blob may not exist yet, initialize vote counts
-    }
-
-    // Update vote counts
-    if (voteType === 'thumbsUp') {
-        voteCounts.thumbsUp++;
-    } else if (voteType === 'thumbsDown') {
-        voteCounts.thumbsDown++;
-    }
-
-    // Save updated vote counts
-    await blobStore.put('votes.json', JSON.stringify(voteCounts));
-
-    return {
-        statusCode: 200,
-        body: JSON.stringify({ message: 'Vote received', voteCounts }),
-    };
+    return new Response('Method Not Allowed', { status: 405 });
 };
